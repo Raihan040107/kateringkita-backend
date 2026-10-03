@@ -1,0 +1,26 @@
+# Dependency folder (ukuran sangat besar, tidak perlu di-push)
+node_modules/
+
+# Environment Variables (berisi kredensial sensitif seperti password DB & JWT Secret)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output (folder hasil kompilasi TypeScript)
+dist/
+build/
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# OS / Editor Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
