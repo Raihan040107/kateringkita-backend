@@ -1,6 +1,3 @@
-# Dependency folder (ukuran sangat besar, tidak perlu di-push)
-node_modules/
-
 # Environment Variables (berisi kredensial sensitif seperti password DB & JWT Secret)
 .env
 .env.local
