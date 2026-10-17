@@ -4,6 +4,8 @@ import db from "../config/db";
 import * as userModel from "../models/userModel";
 import * as merchantModel from "../models/merchantModel";
 import { generateToken } from "../utils/jwt";
+import { AuthRequest } from "../middlewares/authMiddleware";
+import { RowDataPacket } from "mysql2";
 
 export const getMerchantTypes = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -83,11 +85,81 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       user: {
         id: user.user_id,
         nama_lengkap: user.nama_lengkap,
+        email: user.email,
+        no_whatsapp: user.no_whatsapp,
         role: user.nama_role,
         nama_usaha: user.nama_usaha,
       },
     });
   } catch (err: any) {
     res.status(500).json({ message: "Gagal proses login", error: err.message });
+  }
+};
+
+/**
+ * Endpoint Logout
+ * Memvalidasi dan menghapus sesi / token sisi klien
+ */
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({
+      message: "Logout berhasil! Sesi / token Anda telah diakhiri.",
+    });
+  } catch (err: any) {
+    res.status(500).json({ message: "Gagal proses logout", error: err.message });
+  }
+};
+
+/**
+ * Endpoint Profil User Terautentikasi (GET /api/auth/me)
+ */
+export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "Tidak terautentikasi" });
+      return;
+    }
+
+    const [rows] = await db.query<RowDataPacket[]>(
+      `SELECT u.user_id, u.nama_lengkap, u.email, u.no_whatsapp, r.nama_role, m.nama_usaha, m.alamat_usaha
+       FROM users u
+       JOIN roles r ON u.role_id = r.role_id
+       LEFT JOIN merchants m ON u.user_id = m.user_id
+       WHERE u.user_id = ?`,
+      [req.user.userId]
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json({ message: "Data pengguna tidak ditemukan" });
+      return;
+    }
+
+    res.json({ user: rows[0] });
+  } catch (err: any) {
+    res.status(500).json({ message: "Gagal mengambil data profil", error: err.message });
+  }
+};
+
+/**
+ * Endpoint Khusus Admin (Otorisasi RBAC: authorizeRoles('admin'))
+ * Mengambil seluruh daftar pengguna dalam sistem
+ */
+export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const [rows] = await db.query<RowDataPacket[]>(
+      `SELECT u.user_id, u.nama_lengkap, u.email, u.no_whatsapp, r.nama_role, m.nama_usaha, u.created_at
+       FROM users u
+       JOIN roles r ON u.role_id = r.role_id
+       LEFT JOIN merchants m ON u.user_id = m.user_id
+       ORDER BY u.user_id ASC`
+    );
+
+    res.json({
+      message: "Daftar pengguna berhasil dimuat (Akses Admin)",
+      total: rows.length,
+      users: rows,
+    });
+  } catch (err: any) {
+    res.status(500).json({ message: "Gagal mengambil daftar pengguna", error: err.message });
   }
 };
